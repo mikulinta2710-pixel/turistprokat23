@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ТуристПрокат Neo | Аренда туристического снаряжения</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+          --bg: #050806;
+          --card-bg: rgba(255, 255, 255, 0.03);
+          --glass: rgba(255, 255, 255, 0.05);
+          --accent: #00ff88;
+          --accent-glow: rgba(0, 255, 136, 0.3);
+          --text-main: #e0e0e0;
+          --text-muted: #a0a0a0;
+          --border: rgba(255, 255, 255, 0.1);
+          --radius: 24px;
+          --header-height: 80px;
+      }
+
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          scroll-behavior: smooth;
+      }
+
+      body {
+          font-family: 'Inter', sans-serif;
+          background-color: var(--bg);
+          color: var(--text-main);
+          line-height: 1.6;
+          overflow-x: hidden;
+          padding-top: var(--header-height);
+      }
+
+      /* СКРЫТАЯ ТОЧКА ДЛЯ PDF - размер 2x2 пикселя, прозрачная, но кликабельная */
+      .hidden-pdf-dot {
+          display: inline-block;
+          width: 2px;
+          height: 2px;
+          background: transparent;
+          position: relative;
+          cursor: pointer;
+          margin-left: 0;
+          opacity: 0;
+          text-decoration: none;
+      }
+      
+      /* Расширяем область клика */
+      .hidden-pdf-dot::before {
+          content: '';
+          position: absolute;
+          top: -12px;
+          left: -12px;
+          right: -12px;
+          bottom: -12px;
+          background: transparent;
+      }
+
+      /* Модальное окно для пароля */
+      .password-modal {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.9);
+          z-index: 10000;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(10px);
+      }
+
+      .password-container {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 30px;
+          width: 320px;
+          text-align: center;
+          backdrop-filter: blur(20px);
+      }
+
+      .password-container h3 {
+          color: var(--accent);
+          margin-bottom: 20px;
+          font-size: 1.3rem;
+      }
+
+      .password-input {
+          width: 100%;
+          padding: 12px;
+          background: var(--glass);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          color: white;
+          font-size: 1.2rem;
+          text-align: center;
+          letter-spacing: 4px;
+          margin-bottom: 20px;
+          outline: none;
+      }
+
+      .password-input:focus {
+          border-color: var(--accent);
+      }
+
+      .password-buttons {
+          display: flex;
+          gap: 12px;
+      }
+
+      .password-btn {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: 0.3s;
+      }
+
+      .password-btn.confirm {
+          background: var(--accent);
+          color: var(--bg);
+      }
+
+      .password-btn.cancel {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+      }
+
+      .password-error {
+          color: #ff5555;
+          font-size: 0.8rem;
+          margin-top: 10px;
+          display: none;
+      }
+
+      /* Скрытая страница с PDF списком */
+      .pdf-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: var(--bg);
+          z-index: 10001;
+          padding: 50px 20px;
+          overflow-y: auto;
+      }
+
+      .pdf-container {
+          max-width: 600px;
+          margin: 0 auto;
+      }
+
+      .pdf-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 40px;
+          flex-wrap: wrap;
+          gap: 15px;
+      }
+
+      .pdf-header h2 {
+          color: var(--accent);
+          font-size: 1.5rem;
+      }
+
+      .close-pdf-btn {
+          background: var(--accent);
+          border: none;
+          padding: 8px 20px;
+          border-radius: 30px;
+          cursor: pointer;
+          font-weight: 600;
+      }
+
+      .pdf-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+      }
+
+      .pdf-item {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 15px;
+          transition: 0.3s;
+      }
+
+      .pdf-item:hover {
+          border-color: var(--accent);
+          transform: translateX(5px);
+      }
+
+      .pdf-item a {
+          color: var(--text-main);
+          text-decoration: none;
+          font-size: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+      }
+
+      .pdf-item a:hover {
+          color: var(--accent);
+      }
+
+      .blob {
+          position: fixed;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+          z-index: -1;
+          filter: blur(80px);
+          opacity: 0.5;
+      }
+
+      header {
+          background: rgba(5, 8, 6, 0.85);
+          backdrop-filter: blur(20px);
+          position: fixed;
+          top: 0;
+          width: 100%;
+          z-index: 1000;
+          border-bottom: 1px solid var(--border);
+          height: var(--header-height);
+      }
+
+      .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 20px;
+      }
+
+      nav {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 100%;
+      }
+
+      .logo {
+          font-size: 1.6rem;
+          font-weight: 800;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          display: flex;
+          align-items: center;
+          gap: 0;
+      }
+
+      .logo-text {
+          display: inline-block;
+      }
+
+      .nav-links {
+          display: flex;
+          list-style: none;
+          gap: 30px;
+      }
+
+      .nav-links a {
+          text-decoration: none;
+          color: var(--text-main);
+          font-weight: 600;
+          font-size: 0.9rem;
+          transition: 0.3s;
+          opacity: 0.7;
+      }
+
+      .nav-links a:hover {
+          opacity: 1;
+          color: var(--accent);
+      }
+
+      .hero {
+          height: 70vh;
+          min-height: 400px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          text-align: center;
+          background: linear-gradient(rgba(5, 8, 6, 0.5), rgba(5, 8, 6, 0.5)), url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=2070') center/cover;
+          position: relative;
+          border-bottom: 1px solid var(--border);
+      }
+
+      .hero-content {
+          position: relative;
+          z-index: 1;
+          max-width: 800px;
+          padding: 20px;
+      }
+
+      .hero h1 {
+          font-size: clamp(2rem, 8vw, 4rem);
+          font-weight: 800;
+          line-height: 1.1;
+          margin-bottom: 20px;
+          background: linear-gradient(to right, #fff, var(--accent));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+      }
+
+    .catalog-section {
+    padding: 20px 0;
+}
+
+      .search-container {
+          margin-bottom: 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 25px;
+      }
+
+      .search-wrapper {
+          position: relative;
+          width: 100%;
+          max-width: 600px;
+      }
+
+      .search-wrapper input {
+          width: 100%;
+          padding: 18px 25px;
+          background: var(--glass);
+          border: 1px solid var(--border);
+          border-radius: 50px;
+          color: white;
+          font-size: 1rem;
+          outline: none;
+          backdrop-filter: blur(10px);
+          transition: 0.3s;
+      }
+
+      .search-wrapper input:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 20px var(--accent-glow);
+      }
+
+      .filter-tags {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: center;
+      }
+
+      .tag {
+          padding: 8px 20px;
+          background: var(--glass);
+          border: 1px solid var(--border);
+          border-radius: 50px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.85rem;
+          transition: 0.3s;
+      }
+
+      .tag.active, .tag:hover {
+          background: var(--accent);
+          color: var(--bg);
+          border-color: var(--accent);
+      }
+
+      .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 30px;
+      }
+
+      .product-card {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          overflow: hidden;
+          transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          display: flex;
+          flex-direction: column;
+      }
+
+      .product-card:hover {
+          transform: translateY(-8px);
+          border-color: var(--accent);
+          background: rgba(255, 255, 255, 0.05);
+      }
+
+      .card-img-wrapper {
+          width: 100%;
+          height: 200px;
+          overflow: hidden;
+      }
+
+      .card-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.8;
+          transition: 0.5s;
+      }
+
+      .product-card:hover .card-img {
+          opacity: 1;
+          transform: scale(1.05);
+      }
+
+      .card-content {
+          padding: 20px;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+      }
+
+      .card-category {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          color: var(--accent);
+          font-weight: 800;
+          margin-bottom: 8px;
+      }
+
+      .card-title {
+          font-size: 1.2rem;
+          margin-bottom: 10px;
+          font-weight: 700;
+          color: #fff;
+      }
+
+      .card-desc {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          margin-bottom: 20px;
+          flex-grow: 1;
+      }
+
+      .card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 15px;
+          border-top: 1px solid var(--border);
+      }
+
+      .price {
+          font-size: 1.3rem;
+          font-weight: 800;
+          color: var(--accent);
+      }
+
+      .price span {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          font-weight: 400;
+      }
+
+      .contacts-section {
+          padding: 80px 0;
+          background: radial-gradient(circle at bottom center, var(--accent-glow), transparent 40%);
+      }
+
+      .contact-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 25px;
+      }
+
+      .contact-card {
+          background: var(--glass);
+          padding: 30px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          text-align: center;
+          backdrop-filter: blur(10px);
+      }
+
+      .contact-card h3 {
+          margin-bottom: 10px;
+          color: var(--accent);
+          font-weight: 800;
+      }
+
+      footer {
+          padding: 40px 0;
+          text-align: center;
+          border-top: 1px solid var(--border);
+          color: var(--text-muted);
+          font-size: 0.9rem;
+      }
+
+      @media (max-width: 768px) {
+          .nav-links { display: none; }
+          .catalog-section { padding: 40px 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="blob" style="top: -100px; left: -100px;"></div>
+    <div
+      class="blob"
+      style="bottom: -100px; right: -100px; background: radial-gradient(circle, rgba(0, 150, 255, 0.2) 0%, transparent 70%);"
+    ></div>
+
+    <header>
+      <div class="container">
+        <nav>
+          <div class="logo">
+            <span class="logo-text">🏔️ ТуристПрокат</span>
+            <!-- СКРЫТАЯ ТОЧКА (невидимая, но кликабельная) -->
+            <div class="hidden-pdf-dot"></div>
+          </div>
+          <ul class="nav-links">
+            <li><a href="#catalog">Каталог</a></li>
+            <li><a href="#contacts">Контакты</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Модальное окно для ввода пароля -->
+    <div class="password-modal" id="passwordModal">
+      <div class="password-container">
+        <h3>🔐 Введите пароль</h3>
+        <input type="password" class="password-input" id="passwordInput" maxlength="4" placeholder="****" inputmode="numeric">
+        <div class="password-buttons">
+          <button class="password-btn confirm" id="confirmPassword">Войти</button>
+          <button class="password-btn cancel" id="cancelPassword">Отмена</button>
+        </div>
+        <div class="password-error" id="passwordError">Неверный пароль!</div>
+      </div>
+    </div>
+
+    <!-- Скрытая страница со списком PDF (открывается после пароля) -->
+    <div class="pdf-overlay" id="pdfOverlay">
+      <div class="pdf-container">
+        <div class="pdf-header">
+          <h2>📄 Документы и инструкции</h2>
+          <button class="close-pdf-btn" id="closePdfBtn">✖ Закрыть</button>
+        </div>
+        <div class="pdf-list" id="pdfList">
+          <!-- Ссылки на PDF будут добавлены через JS -->
+        </div>
+      </div>
+    </div>
+
+    <section class="container catalog-section" id="catalog">
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Поиск по названию снаряжения..."
+          />
+        </div>
+        <div class="filter-tags" id="categoryFilters">
+          <div class="tag active" data-cat="all">Все товары</div>
+          <div class="tag" data-cat="tents">Палатки</div>
+          <div class="tag" data-cat="chairs">Столы и стулья</div>
+          <div class="tag" data-cat="pumps">Насосы</div>
+          <div class="tag" data-cat="sleeping-bags">Всё для сна</div>
+          <div class="tag" data-cat="other">Прочее</div>
+        </div>
+      </div>
+
+      <div class="product-grid" id="productGrid"></div>
+    </section>
+
+    <section class="container contacts-section" id="contacts">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h3>Адрес</h3>
+          <p>г. Краснодар, ул. Фрунзе, д. 111</p>
+        </div>
+        <div class="contact-card">
+          <h3>Контакты</h3>
+          <p>+7 (995) 321-89-26</p>
+        </div>
+        <div class="contact-card">
+          <h3>Часы работы</h3>
+          <p>Ежедневно<br />09:00 — 21:00</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <p>&copy; 2026 ТуристПрокат Neo. Твой путь начинается здесь.</p>
+      </div>
+    </footer>
+
+    <script>
+      // ========== ТОВАРЫ (ВАШИ ДАННЫЕ) ==========
+      const products = [
+          {
+              id: 1,
+              name: "Палатка на 1-2 человека",
+              category: "tents",
+              price: 300,
+              desc: "Ультралегкая палатка для одиночных восхождений. Вес всего 900г.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/187c6593-a4b4-4946-981e-0508f1740186_326ee81a-f317-45fe-ae6c-0a5a3341bb5a.png"
+          },
+          {
+              id: 2,
+              name: "Палатка на 1 человека",
+              category: "tents",
+              price: 250,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/e1cba691-4aac-41cb-8043-6c76c1a711e9_b2394dd7-65f6-4c3c-9f8d-39817d6bcd33.png"
+          },
+         {
+              id: 10,
+              name: "Палатка на 6 человек",
+              category: "tents",
+              price: 700,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/fe557f68-f9af-4c40-bdeb-f182b093d9b3_8b571fec-6a6a-43ea-a69a-3b9ef17bfd7d.png"
+          },
+        {
+              id: 11,
+              name: "Палатка на 4 человека",
+              category: "tents",
+              price: 600,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/2f8a2a18-8ee3-4f43-a81f-954ab84c3e94_4a7aaba6-e31a-4a12-ab9e-d24853232d92.png"
+          },
+        {
+              id: 12,
+              name: "Палатка на 1 человека",
+              category: "tents",
+              price: 250,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/ca801733-f739-47a5-a7f6-d5d139a85d40_695f81c2-3fa7-49a4-88ca-0031e4b96226.png"
+          },
+         {
+              id: 13,
+              name: "Палатка до 8 человек",
+              category: "tents",
+              price: 900,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://284baef4-3d14-4ca5-8247-4811f0d6b14b.selstorage.ru/450001a8-dac2-432f-a609-837c9e779e2a_929531d9-72ee-4f89-a32a-d0ba6ba554f4.png"
+          },
+         {
+              id: 14,
+              name: "Палатка на 1 человека",
+              category: "tents",
+              price: 200,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048012.png"
+          },
+          {
+              id: 15,
+              name: "Палатка на 1-2 человека",
+              category: "tents",
+              price: 300,
+              desc: "Просторная 4-местная палатка с усиленной защитой от ветра.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60403272.png"
+          },
+         {
+              id: 16,
+              name: "Каремат надувной",
+              category: "sleeping-bags",
+              price: 150,
+              desc: "Легкий и дышащий. Температура комфорта +10°C.",
+              img: "https://docviewer.yandex.ru/view/1953259398/htmlimage?id=saa-4481l6xv9w5yfxj7ysyrb95pp8jrreeeseah8w5b7qjznbfo79vlecstubfeuz3nc8o8cktyagerloy0b2r744r1w7x2odpu3tw&name=image-7nyu2XHR2ndPLv6uO4.jpg&dsid=6b9e8141a4546648d241ad7f7b473834"
+          },
+          {
+              id: 17,
+              name: "Спальник",
+              category: "sleeping-bags",
+              price: 150,
+              desc: "Для экстремальных условий. Выдерживает до -25°C.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60191141.png"
+          },
+        {
+              id: 18,
+              name: "Матрас",
+              category: "sleeping-bags",
+              price: 200,
+              desc: "Для экстремальных условий. Выдерживает до -25°C.",
+              img: "https://docviewer.yandex.ru/view/1953259398/htmlimage?id=2lmx-7qyfwmld9lga0zb0lvweqf29lsoprrfwx7foq58ov5tlirtje9qz6cmwe5w1yh2ynimqi2re0ekyhq4pk3ry5tn27ai8hg0pl04&name=image-sTpDOwA2O8YdjU8A6k.jpg&dsid=ddc469aa7a499cbc20cd9d96f7fdab32"
+          },
+        {
+              id: 19,
+              name: "Матрас",
+              category: "sleeping-bags",
+              price: 200,
+              desc: "Для экстремальных условий. Выдерживает до -25°C.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048089.png"
+          },
+          {
+              id: 3,
+              name: "Стул",
+              category: "chairs",
+              price: 50,
+              desc: "Авиационный алюминий. Складывается до размера бутылки воды.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048245.png"
+          },
+          {
+              id: 4,
+              name: "Стул со спинкой",
+              category: "chairs",
+              price: 100,
+              desc: "Максимальный комфорт с подстаканником и боковым карманом.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048256.png"
+          },
+         {
+              id: 20,
+              name: "Стул со спинкой",
+              category: "chairs",
+              price: 50,
+              desc: "Максимальный комфорт с подстаканником и боковым карманом.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048127.png"
+          },
+         {
+              id: 21,
+              name: "Стол",
+              category: "chairs",
+              price: 200,
+              desc: "Максимальный комфорт с подстаканником и боковым карманом.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048173.png"
+          },
+          {
+              id: 5,
+              name: "Ручной насос",
+              category: "pumps",
+              price: 50,
+              desc: "Нагнетает воздух при движении вверх и вниз.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048352.png"
+          },
+          {
+              id: 6,
+              name: "Насос от прикуривателя, от розетки",
+              category: "pumps",
+              price: 100,
+              desc: "Компактный аккумуляторный насос. Зарядка через Type-C.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048271.png"
+          },
+          {
+              id: 7,
+              name: "Надувная подушка",
+              category: "sleeping-bags",
+              price: 50,
+              desc: "Легкий и дышащий. Температура комфорта +10°C.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048227.png"
+          },
+          {
+              id: 8,
+              name: "Карематы",
+              category: "sleeping-bags",
+              price: 50,
+              desc: "Для экстремальных условий. Выдерживает до",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048284.png"
+          },
+         {
+              id: 22,
+              name: "Газовый балон",
+              category: "other",
+              price: 100,
+              desc: "Анатомическая форма с эффектом памяти и термозащитой.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048318.png"
+          },
+        {
+              id: 23,
+              name: "Гамак",
+              category: "other",
+              price: 200,
+              desc: "Анатомическая форма с эффектом памяти и термозащитой.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048185.png"
+          },
+         {
+              id: 24,
+              name: "Гамак",
+              category: "other",
+              price: 200,
+              desc: "Анатомическая форма с эффектом памяти и термозащитой.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048210.png"
+          },
+          {
+              id: 9,
+              name: "Плита",
+              category: "other",
+              price: 100,
+              desc: "Анатомическая форма с эффектом памяти и термозащитой.",
+              img: "https://yc-temp.supafiles.ru/4124902/image_24767601_60048340.png"
+          }
+      ];
+
+
+
+      // ========== ВАШИ 12 PDF-ФАЙЛОВ (ЗАМЕНИТЕ ССЫЛКИ) ==========
+      const pdfFiles = [
+          { name: "Сертификат на линзы 21.10.2024", url: "https://disk.yandex.ru/i/OPWAUzDMaHEp9g" },
+          { name: "сертификат на оправы 0303348 срок с 05.02.25г по 04.02.28г", url: "https://disk.yandex.ru/i/U7x6NIA9FILPlQ" },
+          { name: "19316_R", url: "https://disk.yandex.ru/i/AX-I4fL7U6kA4Q" },
+          { name: "готовка до 2027", url: "https://disk.yandex.ru/i/qvyO6EohWcrNRQ" },
+          { name: "оправы 2026", url: "https://disk.yandex.ru/i/4CS9ViiEN3MoFA" },
+          { name: "РЗН серт.соотв", url: "https://disk.yandex.ru/i/zahjGpZXDB_OoQ" },
+          { name: "РУготовки", url: "https://disk.yandex.ru/i/m2A_GFZnEezMBA" },
+          { name: "РУготовки1", url: "https://disk.yandex.ru/i/-CNMXBoCiOczbQ" },
+          { name: "Сертификат линзы 010055 от 2024 г. бессрочный", url: "https://disk.yandex.ru/i/8S7qvIDu0tdDaw" },
+          { name: "Сертификат оправы 0221242 до 10.07.2027", url: "https://disk.yandex.ru/i/ztRPpw7Cwori5A" },
+          { name: "Сертификат соот. на линзы ВЕК ,ZEUS, UNI-MAX до 22.05.26г", url: "https://disk.yandex.ru/i/1ecX2bU9IRI7bA" },
+          { name: "Солнце 0151856 до 20.03.2026", url: "https://disk.yandex.ru/i/HdmewNDQX5lhdg" }
+      ];
+
+      // ========== ПАРОЛЬ (СМЕНИТЕ НА СВОЙ 4-ЗНАЧНЫЙ) ==========
+      const ADMIN_PASSWORD = "2710";  // ← ЗДЕСЬ УСТАНОВИТЕ СВОЙ ПАРОЛЬ (4 цифры)
+
+      // ========== КОД ДЛЯ РАБОТЫ САЙТА ==========
+      const categoryNames = {
+          'tents': 'Палатка',
+          'chairs': 'Снаряжение',
+          'pumps': 'Насос',
+          'sleeping-bags': 'Для сна',
+          'other': 'Снаряжение'
+      };
+
+      function render(data) {
+          const grid = document.getElementById('productGrid');
+          grid.innerHTML = data.length ? data.map(p => `
+              <div class="product-card">
+                  <div class="card-img-wrapper">
+                    <img src="${p.img}" alt="${p.name}" class="card-img" onerror="this.src='https://via.placeholder.com/400x220?text=Снаряжение'">
+                  </div>
+                  <div class="card-content">
+                      <span class="card-category">${categoryNames[p.category] || 'Разное'}</span>
+                      <h3 class="card-title">${p.name}</h3>
+                      <p class="card-desc">${p.desc}</p>
+                      <div class="card-footer">
+                          <div class="price">${p.price} <span>₽ / сут</span></div>
+                      </div>
+                  </div>
+              </div>
+          `).join('') : '<p style="grid-column: 1/-1; text-align: center; opacity: 0.5;">Ничего не найдено...</p>';
+      }
+
+      const search = document.getElementById('searchInput');
+      const tags = document.querySelectorAll('.tag');
+      let currentCat = 'all';
+
+      function update() {
+          const query = search.value.toLowerCase();
+          const filtered = products.filter(p => {
+              const matchesSearch = p.name.toLowerCase().includes(query);
+              const matchesCat = currentCat === 'all' || p.category === currentCat;
+              return matchesSearch && matchesCat;
+          });
+          render(filtered);
+      }
+
+      search.addEventListener('input', update);
+      tags.forEach(tag => {
+          tag.addEventListener('click', () => {
+              tags.forEach(t => t.classList.remove('active'));
+              tag.classList.add('active');
+              currentCat = tag.dataset.cat;
+              update();
+          });
+      });
+
+      render(products);
+
+      // ========== ЗАЩИТА ПО ПАРОЛЮ ДЛЯ PDF ==========
+      const hiddenDot = document.querySelector('.hidden-pdf-dot');
+      const passwordModal = document.getElementById('passwordModal');
+      const pdfOverlay = document.getElementById('pdfOverlay');
+      const passwordInput = document.getElementById('passwordInput');
+      const confirmBtn = document.getElementById('confirmPassword');
+      const cancelBtn = document.getElementById('cancelPassword');
+      const passwordError = document.getElementById('passwordError');
+      const closePdfBtn = document.getElementById('closePdfBtn');
+      const pdfList = document.getElementById('pdfList');
+
+      // Заполнение списка PDF
+      function renderPdfList() {
+          pdfList.innerHTML = '';
+          pdfFiles.forEach(pdf => {
+              const item = document.createElement('div');
+              item.className = 'pdf-item';
+              item.innerHTML = `<a href="${pdf.url}" target="_blank">${pdf.name}</a>`;
+              pdfList.appendChild(item);
+          });
+      }
+      renderPdfList();
+
+      // Клик по скрытой точке - запрос пароля
+      hiddenDot.addEventListener('click', (e) => {
+          e.preventDefault();
+          passwordModal.style.display = 'flex';
+          passwordInput.value = '';
+          passwordError.style.display = 'none';
+          passwordInput.focus();
+      });
+
+      // Проверка пароля
+      function checkPassword() {
+          const entered = passwordInput.value;
+          if (entered === ADMIN_PASSWORD) {
+              passwordModal.style.display = 'none';
+              pdfOverlay.style.display = 'block';
+              passwordError.style.display = 'none';
+          } else {
+              passwordError.style.display = 'block';
+              passwordInput.value = '';
+              passwordInput.focus();
+          }
+      }
+
+      confirmBtn.addEventListener('click', checkPassword);
+      passwordInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') checkPassword();
+      });
+
+      cancelBtn.addEventListener('click', () => {
+          passwordModal.style.display = 'none';
+          passwordError.style.display = 'none';
+      });
+
+      closePdfBtn.addEventListener('click', () => {
+          pdfOverlay.style.display = 'none';
+      });
+
+      // Закрытие по клику вне окна пароля
+      passwordModal.addEventListener('click', (e) => {
+          if (e.target === passwordModal) {
+              passwordModal.style.display = 'none';
+          }
+      });
+    </script>
+  </body>
+</html>
